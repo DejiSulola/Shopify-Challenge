@@ -1,0 +1,99 @@
+---
+title: "Shopify Rscript"
+author: "Deji Sulola"
+date: "2/26/2022"
+output: html_document
+---
+
+# QUESTION 1:
+Given some sample data, write a program to answer the following: click [here](https://docs.google.com/spreadsheets/d/16i38oonuX1y1g7C_UAmiK9GkY7cS-64DfiDMNiR41LM/edit#gid=0) to access the required data set
+
+On Shopify, we have exactly 100 sneaker shops, and each of these shops sells only one model of shoe. We want to do some analysis of the average order value (AOV). When we look at orders data over a 30 day window, we naively calculate an AOV of $3145.13. Given that we know these shops are selling sneakers, a relatively affordable item, something seems wrong with our analysis. 
+
+#### What could be wrong with our intial AOV value?
+For this investigation, we take a deep-dive into our sales data to have a full understanding of what went wrong and how we can correct for the error (if any). First, we load our libraries, then sales data. We find that the  previously calculated AOV of $3145.13 was derived through taking an average of the sum of total order amount for all stores. 
+
+```{r message=FALSE}
+library(tidyverse)
+library(dplyr)
+library(readxl)
+setwd("/Users/dejisulola/Downloads")
+Shops <- read_excel("2019 Winter Data Science Intern Challenge Data Set.xlsx")
+head(Shops,10)
+summary(Shops$order_amount)
+```
+#### What is the best way to evaluate the data?
+
+Getting the correct average order value requires that we standardize our total order value by the quantity of Sneakers sold (this the first source of problem in our prior analysis). Hence, we create a  new variable called CPU (Cost per Unit) which is simply the total order value divided by the quantity order. This new variable reflects the price per sneakers for each shop, after which we can comfortably take a total average for all shops.
+
+```{r}
+Shops_ <- mutate(Shops,CPU = Shops$order_amount/Shops$total_items)
+summary(Shops_$CPU)
+```
+
+We arrive at a technically correct Average Order Value of $387.7. But comparing our AOV with some of the CPU values we saw earlier, we can tell the AOV is very high which is not expected considering the mean is always supposed to be at the center of the distribution. Therefore, we construct an histogram to see the distribution of the CPU and discover Store 78 has a very high CPU and is the source of the skewness in the mean.
+
+```{r}
+hist(Shops_$CPU)
+Check <- filter(Shops_, Shops_$CPU > 387)
+Check$shop_id
+Shops_$class <- ifelse(Shops_$CPU < 353, "B",
+                ifelse(Shops_$CPU > 353, "A", "X"))
+Shops_
+```
+#### What is the best Metric?
+Although, the value of $387. 7428, is technically a correct AOV, it is skewed to the right because not all stores are price compliant within the same range (considering they are selling the same model). Hence, we decided to rank all stores based on their price range and this can be followed from many factors that are missing form our data e.g delivery costs, high-end vs. mass stores, possible typo error from shop 78 etc. So we use a classified mean method - Groups are: A - every Shop that is not Shop 78, while B - Shop 78. An alternatve is to exclude Shop 78 from the data (most likely choice if our analysis extends beyond averages).
+
+```{r}
+Shops_ %>% 
+  group_by(class) %>%
+  summarize(AOV = mean(CPU))
+```
+```{r}
+Shops_ %>% 
+  group_by(class) %>%
+  tally()
+```
+##### What is the Value?
+From this, we can then arrive at a proper AOV - $152.5 (excluding shop 78). This gives a proper representation for management actions.
+
+# QUESTION 2: 
+For this question you’ll need to use SQL. Follow this [link](https://www.w3schools.com/SQL/TRYSQL.ASP?FILENAME=TRYSQL_SELECT_ALL) to access the data set required for the challenge.
+Please use queries to answer the following questions.
+
+#### A. How many orders were shipped by Speedy Express in total?
+
+```{SQL}
+SELECT shp.ShipperName, ord.ShipperID, SUM(ordt.Quantity) AS TotalQuantity
+FROM OrderDetails ordt, Orders ord, Shippers shp
+WHERE ord.ShipperID = shp.ShipperID AND ord.OrderID=ordt.OrderID AND shp.ShipperName = 'Speedy Express';
+```
+
+Total Number of orders shipped by Speedy Express is 3575. The needed data points for this question is scattered across three tables (Order Details, Orders and Shippers). We derive this by selecting and matching the keys from the tables, summing the quantity ordered and then we filter the shipper names (selecting only Speedy Express).
+
+#### B. What is the last name of the employees with the most orders?
+
+```{SQL}
+SELECT ord.OrderID, ordt.Quantity, ep.EmployeeID, ep.LastName, SUM(ordt.Quantity) AS TotalOrders
+FROM OrderDetails ordt, Orders ord, Employees ep
+where ordt.OrderID = ord.OrderID AND ord.EmployeeID = ep.EmployeeID
+GROUP BY (LastName)
+ORDER BY TotalOrders DESC
+LIMIT 1;
+```
+
+We find that Peacock is the employee with the most orders - 3232 orders. Similar to the first question, we combine keys from 3 separate tables (OrderDetails, Orders and Employees). Then, we match the unique identifiers from the tables, sum up and sort the quantity of orders and group by employee's last name. The limit function is tuned to 1, to give us the highest number of orders.
+
+#### C. What product was ordered the most by customers in Germany?
+
+```{SQL}
+SELECT cm.Country, ordt.ProductID, pd.ProductName, SUM(ordt.Quantity) AS TotalOrder
+FROM Customers cm, OrderDetails ordt, Orders ord, Products pd
+WHERE cm.CustomerID=ord.CustomerID AND ordt.ProductID=Pd.ProductID AND ord.OrderID=ordt.OrderID AND cm.Country ='Germany'
+GROUP BY ProductName
+ORDER BY TotalOrder DESC
+LIMIT 1;
+```
+
+Boston Crab Meat was ordered the most by customers in Germany. We combined keys from four tables (Customers, OrderDetails, Orders and Products) and then we filter the country by "Germany", sum ap and rank the quantity ordered and finally we group by the product name to see what was ordered for each products.
+
