@@ -14,7 +14,7 @@ Given some sample data, write a program to answer the following: click [here](ht
 On Shopify, we have exactly 100 sneaker shops, and each of these shops sells only one model of shoe. We want to do some analysis of the average order value (AOV). When we look at orders data over a 30 day window, we naively calculate an AOV of $3145.13. Given that we know these shops are selling sneakers, a relatively affordable item, something seems wrong with our analysis. 
 
 #### What could be wrong with our intial AOV value?
-For this investigation, we take a deep-dive into our sales data to have a full understanding of what went wrong and how we can correct for the error (if any). First, we load our libraries, then sales data. We find that the  previously calculated AOV of $3145.13 was derived through taking an average of the sum of total order amount for all stores. 
+For this investigation, we take a deep-dive into our sales data to have a full understanding of what went wrong and how we can correct for the error (if any). First, we load our libraries, then sales data. We find that the  previously calculated AOV of $3145.13 was derived through taking an average of the sum of total order amount for all stores.
 
 ```{r message=FALSE}
 library(tidyverse)
