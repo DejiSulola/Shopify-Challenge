@@ -2,7 +2,10 @@
 title: "Shopify Rscript"
 author: "Deji Sulola"
 date: "2/26/2022"
-output: html_document
+output:
+  html_document:
+    theme: cerulean
+    toc: true
 ---
 
 # QUESTION 1:
